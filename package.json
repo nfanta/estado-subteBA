@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/nfanta/estado-subteBA/issues"
   },
-  "homepage": "https://github.com/nfanta/estado-subteBA#readme"
+  "homepage": "https://github.com/nfanta/estado-subteBA#readme",
+  "dependencies": {
+    "pg": "^7.4.0"
+  },
+  "engines": {
+    "node": ">= 7.6.0"
+  }
 }
