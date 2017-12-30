@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/nfanta/estado-subteBA#readme",
   "dependencies": {
-    "pg": "^7.4.0"
+    "pg": "^7.4.0",
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2"
   },
   "engines": {
     "node": ">= 7.6.0"
