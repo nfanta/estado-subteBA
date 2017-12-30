@@ -1,0 +1,19 @@
+{
+  "name": "estado-subteba",
+  "version": "1.0.0",
+  "description": "A small app to notify Buenos Aires subway state to telegram",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nfanta/estado-subteBA.git"
+  },
+  "author": "Nicolas Fantagossi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nfanta/estado-subteBA/issues"
+  },
+  "homepage": "https://github.com/nfanta/estado-subteBA#readme"
+}
