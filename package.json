@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/nfanta/estado-subteBA#readme",
   "dependencies": {
+    "node-telegram-bot-api": "^0.30.0",
     "pg": "^7.4.0",
     "request": "^2.83.0",
     "request-promise": "^4.2.2"
