@@ -2,27 +2,37 @@
 
 const { Client } = require('pg');
 const request = require('request-promise');
+const TelegramBot = require('node-telegram-bot-api');
+
+const { TELEGRAM_BOT_TOKEN, CHANNEL_ID, API_URL, DATABASE_URL } = process.env;
+const STATUS_MAP = {
+  'Test': 0,
+  'Normal': 1,
+}
+
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
+
 const client = new Client({
-  connectionString: process.env.DATABASE_URL
+  connectionString: DATABASE_URL
 });
 
-const API_URL = 'http://api-editoriales.clarin.com/api/mobile/transito/subtes/';
-const currentStatus = request({
+let currentStatus = request({
   uri: API_URL,
   json: true
 }).then(function(response) {
   return response.items.reduce(function(acc, line) {
     acc[line.ubicacion_nombre_corto] = line.estado;
+    return acc;
   }, {})
 });
 
 (async function() {
-  await client.connect();
+  await client.connect().catch((e) => {console.log(e)});
 
-  const res = client.query('SELECT * FROM subways');
+  let res = client.query('SELECT * FROM subways');
 
-  await res;
-  await currentStatus;
+  res = await res;
+  currentStatus = await currentStatus;
 
   const procs = [];
 
@@ -32,19 +42,16 @@ const currentStatus = request({
     const line = String.fromCharCode(row.line);
     const status = row.status;
 
-    if (line in status && row.status !== currentStatus[line]) {
-      console.log(`cambió el estado de la linea ${line} de ${row.status} a ${currentStatus[line]}`);
-      procs.push(client.query('UPDATE subways SET status = $1 WHERE line = $2', [currentStatus[line], line]));
+    if (currentStatus.hasOwnProperty(line) && row.status !== STATUS_MAP[currentStatus[line]]) {
+      procs.push(client.query('UPDATE subways SET status = $1 WHERE line = $2', [STATUS_MAP[currentStatus[line]], line.charCodeAt(0)]));
+      const prevState = Object.keys(STATUS_MAP).filter((key) => STATUS_MAP[key] === row.status);
+      const message = `TEST: La linea ${line} cambió de estado ${prevState} a ${currentStatus[line]}`;
+      console.log(message);
+      procs.push(bot.sendMessage(CHANNEL_ID, message));
     }
   })
 
-
-  console.log(res.rows);
-  console.log(currentStatus);
-
-  for (let proc of procs) {
-    await proc;
-  }
+  await Promise.all(procs);
 
   await client.end();
 })()
