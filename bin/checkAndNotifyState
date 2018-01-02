@@ -1,60 +1,38 @@
 #!/usr/bin/env node
 
-const { Client } = require('pg');
-const request = require('request-promise');
-const TelegramBot = require('node-telegram-bot-api');
+const api = require('../lib/apiWrapper');
+const bot = require('../lib/telegramBotWrapper');
+const db = require('../lib/dbWrapper');
 
-// Needed to avoid anoying alert from node telegram bot api package. https://github.com/yagop/node-telegram-bot-api/issues/319
-process.env.NTBA_FIX_319 = true;
+async function main() {
+  let currentStatus = api.get();
 
-const { TELEGRAM_BOT_TOKEN, CHANNEL_ID, API_URL, DATABASE_URL } = process.env;
-const STATUS_MAP = {
-  'Test': 0,
-  'Normal': 1,
-}
+  await db.connect();
 
-const bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
-
-const client = new Client({
-  connectionString: DATABASE_URL
-});
-
-let currentStatus = request({
-  uri: API_URL,
-  json: true
-}).then(function(response) {
-  return response.items.reduce(function(acc, line) {
-    acc[line.ubicacion_nombre_corto] = line.estado;
-    return acc;
-  }, {})
-});
-
-(async function() {
-  await client.connect().catch((e) => {console.log(e)});
-
-  let res = client.query('SELECT * FROM subways');
-
-  res = await res;
+  const storedStatus = await db.getAll();
   currentStatus = await currentStatus;
 
-  const procs = [];
+  const tasks = [];
 
-  res.rows.forEach(function(row) {
-    if (!row.line) return;
+  Object.entries(currentStatus).forEach(([line, newStatus]) => {
+    const oldStatus = storedStatus[line];
 
-    const line = String.fromCharCode(row.line);
-    const status = row.status;
-
-    if (currentStatus.hasOwnProperty(line) && row.status !== STATUS_MAP[currentStatus[line]]) {
-      procs.push(client.query('UPDATE subways SET status = $1 WHERE line = $2', [STATUS_MAP[currentStatus[line]], line.charCodeAt(0)]));
-      const prevState = Object.keys(STATUS_MAP).filter((key) => STATUS_MAP[key] === row.status);
-      const message = `TEST: La linea ${line} cambió de estado ${prevState} a ${currentStatus[line]}`;
-      console.log(message);
-      procs.push(bot.sendMessage(CHANNEL_ID, message));
+    if (newStatus !== oldStatus) {
+      const message = `La linea ${line} cambió de estado ${oldStatus} a ${newStatus}.`;
+      console.log(`New message published: "${message}"`);
+      console.log(`Original response: ${JSON.stringify(api.getRawResponse())}`);
+      tasks.push(bot.publish(message));
+      tasks.push(db.set(line, newStatus));
     }
-  })
+  });
 
-  await Promise.all(procs);
+  if (!tasks.length) {
+    console.log('No updates.');
+  }
 
-  await client.end();
-})()
+  await Promise.all(tasks);
+
+  await db.close();
+}
+
+main();
