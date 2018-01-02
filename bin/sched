@@ -4,6 +4,9 @@ const { Client } = require('pg');
 const request = require('request-promise');
 const TelegramBot = require('node-telegram-bot-api');
 
+// Needed to avoid anoying alert from node telegram bot api package. https://github.com/yagop/node-telegram-bot-api/issues/319
+process.env.NTBA_FIX_319 = true;
+
 const { TELEGRAM_BOT_TOKEN, CHANNEL_ID, API_URL, DATABASE_URL } = process.env;
 const STATUS_MAP = {
   'Test': 0,
