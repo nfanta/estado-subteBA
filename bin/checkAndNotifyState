@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const api = require('../lib/apiWrapper');
+const api = require('../lib/scrapper');
 const bot = require('../lib/telegramBotWrapper');
 const db = require('../lib/dbWrapper');
 
@@ -20,7 +20,6 @@ async function main() {
     if (newStatus !== oldStatus) {
       const message = `La linea ${line} cambió de estado ${oldStatus} a ${newStatus}.`;
       console.log(`New message published: "${message}"`);
-      console.log(`Original response: ${JSON.stringify(api.getRawResponse())}`);
       tasks.push(bot.publish(message));
       tasks.push(db.set(line, newStatus));
     }
